@@ -1,15 +1,14 @@
 plugins {
-  id 'org.springframework.boot' version '2.2.4.RELEASE'
   id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+  id 'org.springframework.boot' version '2.2.4.RELEASE'
+  id 'com.google.protobuf' version '0.8.10'
   id 'java'
   id 'idea'
 }
 
-group = 'com.example'
-version = '0.0.1-SNAPSHOT'
-// sourceCompatibility = '1.8'
-sourceCompatibility = (org.gradle.internal.jvm.Jvm.current().javaVersion ?: JavaVersion.VERSION_1_8).ordinal() > JavaVersion.VERSION_1_8.ordinal()
-    ? JavaVersion.VERSION_11.toString() : JavaVersion.VERSION_1_8.toString()
+// sourceCompatibility = (org.gradle.internal.jvm.Jvm.current().javaVersion ?: JavaVersion.VERSION_1_8).ordinal() > JavaVersion.VERSION_1_8.ordinal()
+//     ? JavaVersion.VERSION_11.toString() : JavaVersion.VERSION_1_8.toString()
+sourceCompatibility = '1.8'
 
 configurations {
   compileOnly {
@@ -22,6 +21,16 @@ repositories {
 }
 
 dependencies {
+  implementation 'io.netty:netty-tcnative:2.0.6.Final'
+  // org.apache.tools.ant.taskdefs.condition.Os.with {
+  //   if (!it.isFamily(it.FAMILY_MAC)) {
+  //     implementation 'io.rsocket:rsocket-transport-netty:0.11.16'
+  //   }
+  // }
+  protobuf "com.google.protobuf:protobuf-java:${project.protobufVersion}"
+  implementation "com.google.protobuf:protobuf-java:${project.protobufVersion}"
+  // protobuf 'com.google.protobuf:protobuf-java:3.10.0'
+  implementation "io.rsocket.rpc:rsocket-rpc-core:${project.rSocketProtobufVersion}"
   implementation 'org.springframework.boot:spring-boot-starter-rsocket'
   compileOnly 'org.projectlombok:lombok'
   annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
@@ -56,5 +65,39 @@ bootJar {
 defaultTasks("clean", "build")
 
 wrapper {
-  gradleVersion = '6.2'
+  gradleVersion = project.gradleWrapperVersion
+}
+
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:${project.protobufVersion}"
+  }
+  plugins {
+    rsocketRpc {
+      artifact = "io.rsocket.rpc:rsocket-rpc-protobuf:${project.rSocketProtobufVersion}"
+    }
+  }
+  generateProtoTasks {
+    all()*.plugins {
+      rsocketRpc {}
+    }
+  }
+}
+
+// If you use Intellij add this so it can find the generated classes
+idea {
+  module {
+    sourceDirs += file("src/main/proto")
+    sourceDirs += file("src/generated/main/java")
+    sourceDirs += file("src/generated/main/rsocketRpc")
+
+    generatedSourceDirs += file('src/generated/main/java')
+    generatedSourceDirs += file('src/generated/main/rsocketRpc')
+  }
+}
+
+clean {
+  delete 'src/generated/main'
+  delete 'build'
+  delete 'out'
 }

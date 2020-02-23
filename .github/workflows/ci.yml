@@ -39,8 +39,9 @@ jobs:
         shell: bash
         run: |
           java -Dfile.encoding="UTF-8" -jar $GITHUB_WORKSPACE/server/build/libs/*.jar &
-          java -Dfile.encoding="UTF-8" -jar $GITHUB_WORKSPACE/client/build/libs/*.jar &
-          echo wait-port 7070 8080
+          echo wait-port 7070...
+          sleep 5s
+          java -Dfile.encoding="UTF-8" -jar $GITHUB_WORKSPACE/client/build/libs/*.jar
       - name: Cache gradle
         uses: actions/cache@v1
         with:
@@ -48,54 +49,55 @@ jobs:
           key: ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache
           restore-keys: |
             ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache-
-  windows:
-    strategy:
-      matrix:
-        java: [11]
-        nodejs-version: [12]
-        python-version: [3.8]
-        gradle-version: [6.2]
-        maven-version: [3.6.3]
-        os: [windows-latest]
-    runs-on: ${{ matrix.os }}
-    name: Java ${{ matrix.java }} on ${{ matrix.os }}
-    steps:
-      - name: Set up NodeJS ${{ matrix.nodejs-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.nodejs-version }}
-      - name: Install required npm packages globally
-        run: npm install -g wait-port
-      - name: Cache npm
-        uses: actions/cache@v1
-        with:
-          path: ~/.npm
-          key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
-          restore-keys: |
-            java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
-      - name: Git clone
-        uses: actions/checkout@v1
-      - name: Setup java
-        uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java }}
-      - name: Build windows gradle apps
-        shell: cmd
-        run: |
-          @chcp 65001>nul
-          gradlew -p server
-          gradlew -p client
-      - name: Test windows gradle apps
-        shell: cmd
-        run: |
-          @chcp 65001>nul
-          start /b "" java -Dfile.encoding="UTF-8" -jar %GITHUB_WORKSPACE%\server\build\libs\server-1.0.0-SNAPSHOT.jar
-          start /b "" java -Dfile.encoding="UTF-8" -jar %GITHUB_WORKSPACE%\client\build\libs\client-1.0.0-SNAPSHOT.jar
-          echo wait-port 7070 8080
-      - name: Cache gradle
-        uses: actions/cache@v1
-        with:
-          path: ~/.gradle
-          key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-gradle-${{ hashFiles('**/.gradle/**') }}
-          restore-keys: |
-            java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-gradle-
+## FIXME after: https://github.com/rsocket/rsocket-rpc-java/issues/58
+#  windows:
+#    strategy:
+#      matrix:
+#        java: [11]
+#        nodejs-version: [12]
+#        python-version: [3.8]
+#        gradle-version: [6.2]
+#        maven-version: [3.6.3]
+#        os: [windows-latest]
+#    runs-on: ${{ matrix.os }}
+#    name: Java ${{ matrix.java }} on ${{ matrix.os }}
+#    steps:
+#      - name: Set up NodeJS ${{ matrix.nodejs-version }}
+#        uses: actions/setup-node@v1
+#        with:
+#          node-version: ${{ matrix.nodejs-version }}
+#      - name: Install required npm packages globally
+#        run: npm install -g wait-port
+#      - name: Cache npm
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/.npm
+#          key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
+#          restore-keys: |
+#            java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
+#      - name: Git clone
+#        uses: actions/checkout@v1
+#      - name: Setup java
+#        uses: actions/setup-java@v1
+#        with:
+#          java-version: ${{ matrix.java }}
+#      - name: Build windows gradle apps
+#        shell: cmd
+#        run: |
+#          @chcp 65001>nul
+#          gradlew -p server
+#          gradlew -p client
+#      - name: Test windows gradle apps
+#        shell: cmd
+#        run: |
+#          @chcp 65001>nul
+#          start /b "" java -Dfile.encoding="UTF-8" -jar %GITHUB_WORKSPACE%\server\build\libs\server-1.0.0-SNAPSHOT.jar
+#          wait-port 7070
+#          java -Dfile.encoding="UTF-8" -jar %GITHUB_WORKSPACE%\client\build\libs\client-1.0.0-SNAPSHOT.jar
+#      - name: Cache gradle
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/.gradle
+#          key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-gradle-${{ hashFiles('**/.gradle/**') }}
+#          restore-keys: |
+#            java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-gradle-
