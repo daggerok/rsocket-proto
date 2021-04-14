@@ -1,0 +1,30 @@
+{
+  "name": "todo",
+  "version": "0.0.1",
+  "description": "TODO",
+  "main": "index.js",
+  "authors": {
+    "name": "Maksim Kostromin",
+    "email": "daggerok@gmail.com"
+  },
+  "repository": {
+    "url": "https://github.com/daggerok/rsocket-proto",
+    "directory": "docs"
+  },
+  "scripts": {
+    "dev": "vuepress dev src",
+    "prebuild": "rimraf .vuepress/dist",
+    "build": "vuepress build --no-cache src",
+    "ci": "cross-env BASE=/rsocket-proto/ npm run build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "1.8.2"
+  },
+  "dependencies": {
+    "@types/node": "14.14.37",
+    "cross-env": "7.0.3",
+    "rimraf": "2.7.1",
+    "vuepress-theme-default-prefers-color-scheme": "2.0.0"
+  }
+}
