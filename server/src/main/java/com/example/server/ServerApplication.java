@@ -23,7 +23,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -65,13 +64,15 @@ class DefaultSimpleService implements SimpleService {
                .map(map -> {
                  StringBuilder builder = new StringBuilder();
                  map.forEach((character, atomicInteger) -> builder.append(
-                     String.format("character -> %s, count -> %d%n",
-                                   character, atomicInteger.get()))
+                     String.format("character -> %s, count -> %d%n", character, atomicInteger.get()))
                  );
-                 map.forEach((character, atomicInteger) -> log
-                     .info("character -> {}, count -> {}", character, atomicInteger.get()));
+                 map.forEach((character, atomicInteger) -> log.info(
+                     "character -> {}, count -> {}", character, atomicInteger.get())
+                 );
                  String s = builder.toString();
-                 return SimpleResponse.newBuilder().setResponseMessage(s).build();
+                 return SimpleResponse.newBuilder()
+                                      .setResponseMessage(s)
+                                      .build();
                });
   }
 
@@ -81,13 +82,16 @@ class DefaultSimpleService implements SimpleService {
     log.info("requestStream -> {}", requestMessage);
     return Flux.interval(Duration.ofMillis(200))
                .onBackpressureDrop()
-               .map(i -> i + " - got message - " + requestMessage)
-               .map(s -> SimpleResponse.newBuilder().setResponseMessage(s).build());
+               .map(i -> String.format("%d - got message - %s", i, requestMessage))
+               .map(s -> SimpleResponse.newBuilder()
+                                       .setResponseMessage(s)
+                                       .build());
   }
 
   @Override
   public Flux<SimpleResponse> streamingRequestAndResponse(Publisher<SimpleRequest> messages, ByteBuf metadata) {
-    return Flux.from(messages).flatMap(e -> requestReply(e, metadata));
+    return Flux.from(messages)
+               .flatMap(e -> requestReply(e, metadata));
   }
 }
 
