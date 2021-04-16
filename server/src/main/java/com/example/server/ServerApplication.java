@@ -15,6 +15,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
@@ -115,10 +116,11 @@ class RSocketConfig {
 }
 
 @SpringBootApplication
+@SuppressWarnings("unchecked")
 public class ServerApplication {
   public static void main(String[] args) {
-    RSocketFactory.Start<CloseableChannel> starter = SpringApplication.run(ServerApplication.class, args)
-                                                                      .getBean(RSocketFactory.Start.class);
+    ConfigurableApplicationContext context = SpringApplication.run(ServerApplication.class, args);
+    RSocketFactory.Start<CloseableChannel> starter = context.getBean(RSocketFactory.Start.class);
     starter.start()
            .block()
            .onClose()
