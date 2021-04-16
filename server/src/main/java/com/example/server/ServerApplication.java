@@ -12,9 +12,9 @@ import io.rsocket.transport.netty.server.CloseableChannel;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -37,11 +38,12 @@ class DefaultSimpleService implements SimpleService {
 
   @Override
   public Mono<SimpleResponse> requestReply(SimpleRequest message, ByteBuf metadata) {
-    log.info("requestReply: -> {}", message);
-    return Mono.fromCallable(() -> SimpleResponse
-        .newBuilder()
-        .setResponseMessage("we got requestReply message -> " + message.getRequestMessage())
-        .build());
+    String msg = message.getRequestMessage();
+    log.info("requestReply: -> {}", msg);
+    SimpleResponse response = SimpleResponse.newBuilder()
+                                            .setResponseMessage("we got requestReply message -> " + msg)
+                                            .build();
+    return Mono.just(response);
   }
 
   @Override
@@ -51,11 +53,12 @@ class DefaultSimpleService implements SimpleService {
                .windowTimeout(10, Duration.ofSeconds(500))
                .take(1)
                .flatMap(Function.identity())
-               .reduce(new ConcurrentHashMap<Character, AtomicInteger>(), (map, s) -> {
-                 char[] chars = s.getRequestMessage().toCharArray();
-                 for (char c : chars) {
-                   map.computeIfAbsent(c, _c -> new AtomicInteger()).incrementAndGet();
-                 }
+               .reduce(new ConcurrentHashMap<Character, AtomicInteger>(), (map, simpleRequest) -> {
+                 char[] chars = simpleRequest.getRequestMessage()
+                                             .toCharArray();
+                 for (char ch : chars)
+                   map.computeIfAbsent(ch, character -> new AtomicInteger())
+                      .incrementAndGet();
                  return map;
                })
                .map(map -> {
@@ -102,18 +105,20 @@ class RSocketConfig {
                          .transport(TcpServerTransport.create(7070));
   }
 
-  // @Bean
-  Mono<CloseableChannel> rSocket(RSocketFactory.Start<CloseableChannel> starter) {
-    return starter.start();
+  // @Bean // in general should be something like so, but ...we are moving it in main static method...
+  ApplicationRunner startAndWait(RSocketFactory.Start<CloseableChannel> starter) {
+    return args -> starter.start()
+                          .block()
+                          .onClose()
+                          .block();
   }
 }
 
 @SpringBootApplication
 public class ServerApplication {
-
   public static void main(String[] args) {
-    ConfigurableApplicationContext context = SpringApplication.run(ServerApplication.class, args);
-    RSocketFactory.Start<CloseableChannel> starter = context.getBean(RSocketFactory.Start.class);
+    RSocketFactory.Start<CloseableChannel> starter = SpringApplication.run(ServerApplication.class, args)
+                                                                      .getBean(RSocketFactory.Start.class);
     starter.start()
            .block()
            .onClose()
