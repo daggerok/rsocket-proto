@@ -1,78 +1,52 @@
 name: CI
 on: [push]
+env:
+  JAVA_VERSION: 8
+  NODE_VERSION: 12
 jobs:
   github-pages:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        java: [8]
-    runs-on: ${{ matrix.os }}
-    name: GitHub Pages using Gradle Java ${{ matrix.java }} on ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Cache gradle nodejs and npm
+      - uses: actions/cache@v3
         id: gradle-npm-cache
-        uses: actions/cache@v3
         with:
           path: |
+            ~/.n*
             ~/.gradle
             !~/.gradle/exclude
-          key: ${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/*.gradle', '**/*.properties') }}
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java }}
+          java-version: ${{ env.JAVA_VERSION }}
       - run: ./gradlew -p docs npm_run_ci
       - name: Deploy 🚀 GitHub Pages build
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: docs/src/.vuepress/dist # The folder the action should deploy.
-  unix:
-    strategy:
-      matrix:
-        java: [8]
-        nodejs-version: [12]
-        python-version: [3.8]
-        gradle-version: [6.2]
-        maven-version: [3.6.3]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    name: Java ${{ matrix.java }} on ${{ matrix.os }}
+  integration-tests:
+    runs-on: ubuntu-latest
     steps:
-      - name: Cache gradle
-        uses: actions/cache@v3
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
-          path: ~/.gradle
-          key: ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache
-          restore-keys: |
-            ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache-
-      - name: Cache npm
-        uses: actions/cache@v3
+          path: |
+            ~/.n*
+            ~/.gradle
+            !~/.gradle/exclude
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/*.gradle', '**/*.properties') }}
+      - uses: actions/setup-node@v3
         with:
-          path: ~/.npm
-          key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
-          restore-keys: |
-            java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
-      - name: Set up NodeJS ${{ matrix.nodejs-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.nodejs-version }}
-      - name: Install required npm packages globally
-        run: npm install -g wait-port
-      - name: Git clone
-        uses: actions/checkout@v3
-      - name: Setup java
-        uses: actions/setup-java@v3
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install -g wait-port
+      - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-      - name: Build unix gradle apps
-        shell: bash
-        run: ./gradlew -p server ; ./gradlew -p client
-      - name: Test unix gradle apps
-        shell: bash
-        run: |
+          java-version: ${{ env.JAVA_VERSION }}
+      - run: ./gradlew -p server ; ./gradlew -p client
+      - run: |
           java -Dfile.encoding="UTF-8" -jar $GITHUB_WORKSPACE/server/build/libs/*.jar &
           echo wait-port 7070...
           sleep 5s
