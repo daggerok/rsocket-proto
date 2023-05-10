@@ -10,10 +10,6 @@ jobs:
     name: GitHub Pages using Gradle Java ${{ matrix.java }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
       - name: Cache gradle nodejs and npm
         id: gradle-npm-cache
         uses: actions/cache@v3
@@ -22,6 +18,10 @@ jobs:
             ~/.gradle
             !~/.gradle/exclude
           key: ${{ runner.os }}-${{ hashFiles('**/package.json') }}
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
       - run: ./gradlew -p docs npm_run_ci
       - name: Deploy 🚀 GitHub Pages build
         uses: JamesIves/github-pages-deploy-action@4.1.0
@@ -40,12 +40,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Java ${{ matrix.java }} on ${{ matrix.os }}
     steps:
-      - name: Set up NodeJS ${{ matrix.nodejs-version }}
-        uses: actions/setup-node@v3
+      - name: Cache gradle
+        uses: actions/cache@v3
         with:
-          node-version: ${{ matrix.nodejs-version }}
-      - name: Install required npm packages globally
-        run: npm install -g wait-port
+          path: ~/.gradle
+          key: ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache
+          restore-keys: |
+            ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache-
       - name: Cache npm
         uses: actions/cache@v3
         with:
@@ -53,6 +54,12 @@ jobs:
           key: java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
           restore-keys: |
             java-${{ matrix.java }}-${{ runner.os }}-${{ matrix.os }}-npm-
+      - name: Set up NodeJS ${{ matrix.nodejs-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodejs-version }}
+      - name: Install required npm packages globally
+        run: npm install -g wait-port
       - name: Git clone
         uses: actions/checkout@v3
       - name: Setup java
@@ -70,10 +77,3 @@ jobs:
           echo wait-port 7070...
           sleep 5s
           java -Dfile.encoding="UTF-8" -jar $GITHUB_WORKSPACE/client/build/libs/*.jar
-      - name: Cache gradle
-        uses: actions/cache@v3
-        with:
-          path: ~/.gradle
-          key: ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache
-          restore-keys: |
-            ${{ matrix.gradle-version }}-${{ matrix.os }}-gradle-cache-
