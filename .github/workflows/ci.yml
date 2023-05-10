@@ -15,7 +15,7 @@ jobs:
             ~/.n*
             ~/.gradle
             !~/.gradle/exclude
-          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/*.gradle', '**/*.properties') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/package-lock.json', '**/*.gradle', '**/*.properties') }}
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -36,7 +36,7 @@ jobs:
             ~/.n*
             ~/.gradle
             !~/.gradle/exclude
-          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/*.gradle', '**/*.properties') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json', '**/package-lock.json', '**/*.gradle', '**/*.properties') }}
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
